@@ -62,7 +62,11 @@ Open [shibuya_osm.html](shibuya_osm.html) in any modern web browser to view the 
 
 ## Usage
 
-### Running the Script
+### Viewing the Visualization
+
+**Quickest way:** Simply open [shibuya_osm.html](shibuya_osm.html) in your browser - no setup required!
+
+### Regenerating or Creating Your Own
 
 ```bash
 python build_shibuya_map_002.py
@@ -71,12 +75,19 @@ python build_shibuya_map_002.py
 
 ### Getting OSM Data
 
-The script expects an OSM file at the configured path. To export data for any location:
+**Note:** The pre-generated `shibuya_osm.html` can be viewed directly without running the script. To regenerate the visualization or create your own:
+
+The script expects an OSM XML file. To get data for any location:
 
 1. Visit [OpenStreetMap Export](https://www.openstreetmap.org/export)
-2. Navigate to your desired area (e.g., Shibuya Crossing)
-3. Click "Export" to download as `.osm` XML file
-4. Update the `osm_file` path in the script
+2. Navigate to your desired area (e.g., Shibuya Crossing: 35.6595°N, 139.7004°E)
+3. Select the area using the "Manually select a different area" option
+4. Click "Export" to download the `.osm` XML file
+5. Save it to your project directory (e.g., `shibuya_crossing.osm`)
+6. Update line 20 in `build_shibuya_map_002.py`:
+   ```python
+   osm_file = "shibuya_crossing.osm"  # Update this path
+   ```
 
 ### Customization
 
