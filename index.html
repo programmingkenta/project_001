@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isometric Shibuya Crossing | Interactive Map Visualization</title>
+    <meta name="description" content="An interactive isometric visualization of Tokyo's famous Shibuya Crossing, built with real OpenStreetMap data and classic game-style rendering.">
+    <meta property="og:title" content="Isometric Shibuya Crossing">
+    <meta property="og:description" content="Real geospatial data meets classic game aesthetics. Explore Shibuya Crossing in isometric pixel art style.">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #1a1028;
+            --bg-card: #251a35;
+            --accent-pink: #ff7799;
+            --accent-purple: #9966cc;
+            --accent-blue: #66aaff;
+            --accent-cyan: #66ffcc;
+            --text-primary: #ffffff;
+            --text-secondary: #aaa;
+            --border: #554466;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 80%, rgba(153, 102, 204, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 119, 153, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 40px rgba(255, 119, 153, 0.3);
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            color: white;
+            box-shadow: 0 4px 20px rgba(255, 119, 153, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(255, 119, 153, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            border-color: var(--accent-purple);
+        }
+
+        /* Demo Preview */
+        .demo-preview {
+            margin-top: 4rem;
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .demo-frame {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .demo-frame-header {
+            background: var(--bg-dark);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .demo-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .demo-dot.red { background: #ff5f56; }
+        .demo-dot.yellow { background: #ffbd2e; }
+        .demo-dot.green { background: #27ca40; }
+
+        .demo-iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+        }
+
+        /* Features Section */
+        .section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-purple);
+            box-shadow: 0 10px 40px rgba(153, 102, 204, 0.15);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* How It Works */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pipeline-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            min-width: 180px;
+            flex: 1;
+            max-width: 220px;
+        }
+
+        .pipeline-step .step-num {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            margin: 0 auto 1rem;
+        }
+
+        .pipeline-step h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pipeline-step p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent-purple);
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .pipeline-arrow {
+                transform: rotate(90deg);
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .tech-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tech-badge span {
+            color: var(--accent-cyan);
+        }
+
+        /* Code Preview */
+        .code-preview {
+            background: #0d0d0d;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+
+        .code-header {
+            background: var(--bg-card);
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-block {
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Monaco', monospace;
+            font-size: 0.85rem;
+            line-height: 1.7;
+        }
+
+        .code-block .comment { color: #6a737d; }
+        .code-block .keyword { color: #ff7b72; }
+        .code-block .string { color: #a5d6ff; }
+        .code-block .number { color: #79c0ff; }
+        .code-block .function { color: #d2a8ff; }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        footer a {
+            color: var(--accent-pink);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Scroll animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="badge">Open Source Project</div>
+            <h1 class="pixel-font">ISOMETRIC<br><span>SHIBUYA CROSSING</span></h1>
+            <p class="hero-subtitle">
+                Real OpenStreetMap data transformed into a classic game-style isometric visualization.
+                Explore Tokyo's famous intersection like never before.
+            </p>
+            <div class="cta-buttons">
+                <a href="shibuya_osm.html" class="btn btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Launch Demo
+                </a>
+                <a href="https://github.com/programmingkenta/project_001" class="btn btn-secondary" target="_blank">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    View Source
+                </a>
+            </div>
+
+            <!-- Demo Preview -->
+            <div class="demo-preview">
+                <div class="demo-frame">
+                    <div class="demo-frame-header">
+                        <div class="demo-dot red"></div>
+                        <div class="demo-dot yellow"></div>
+                        <div class="demo-dot green"></div>
+                    </div>
+                    <iframe src="shibuya_osm.html" class="demo-iframe" title="Isometric Shibuya Demo"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section fade-in">
+        <div class="section-header">
+            <h2>Key Features</h2>
+            <p>Combining real-world geospatial data with nostalgic game aesthetics</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🗺️</div>
+                <h3>Real OpenStreetMap Data</h3>
+                <p>Authentic building geometry and metadata directly from the world's largest collaborative mapping project.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎮</div>
+                <h3>Classic Isometric Style</h3>
+                <p>The iconic 26.565° viewing angle from SimCity, Civilization, and Monument Valley.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🖌️</div>
+                <h3>16-Bit Pixel Art</h3>
+                <p>Retro-styled rendering with color-coded buildings and crisp pixel-perfect edges.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🖱️</div>
+                <h3>Interactive Exploration</h3>
+                <p>Pan and explore the entire Shibuya Crossing area with smooth canvas-based rendering.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📦</div>
+                <h3>Zero Dependencies</h3>
+                <p>Pure Python + HTML5 Canvas. No external libraries, no server required.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Works Anywhere</h3>
+                <p>Self-contained HTML output works offline in any modern browser.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section fade-in">
+        <div class="section-header">
+            <h2>How It Works</h2>
+            <p>From geographic coordinates to isometric pixels in 4 steps</p>
+        </div>
+        <div class="pipeline">
+            <div class="pipeline-step">
+                <div class="step-num">1</div>
+                <h4>Parse OSM XML</h4>
+                <p>Extract nodes and building polygons from OpenStreetMap data</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+                <div class="step-num">2</div>
+                <h4>Transform Coords</h4>
+                <p>Convert lat/lon to local meters using equirectangular projection</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+                <div class="step-num">3</div>
+                <h4>Isometric Math</h4>
+                <p>Apply 2:1 projection for the classic 26.565° angle</p>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+                <div class="step-num">4</div>
+                <h4>Canvas Render</h4>
+                <p>Generate interactive HTML5 visualization</p>
+            </div>
+        </div>
+
+        <!-- Code Preview -->
+        <div class="code-preview">
+            <div class="code-header">isometric_projection.py — The Core Math</div>
+            <div class="code-block">
+<span class="comment"># The magic 2:1 ratio that defines isometric projection</span>
+<span class="keyword">def</span> <span class="function">to_isometric</span>(x, y, height, scale):
+    <span class="comment"># Creates the 26.565° angle (arctan(0.5))</span>
+    iso_x = (x - y) * scale
+    iso_y = (x + y) * <span class="number">0.5</span> * scale - height * scale
+    <span class="keyword">return</span> iso_x, iso_y
+            </div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="tech-stack">
+            <div class="tech-badge"><span>🐍</span> Python 3</div>
+            <div class="tech-badge"><span>📄</span> HTML5 Canvas</div>
+            <div class="tech-badge"><span>🗺️</span> OpenStreetMap</div>
+            <div class="tech-badge"><span>📐</span> Isometric Projection</div>
+        </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section class="section fade-in">
+        <div class="section-header">
+            <h2>Skills Demonstrated</h2>
+            <p>This project showcases a blend of data engineering and graphics programming</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔬</div>
+                <h3>Geospatial Processing</h3>
+                <p>OSM XML parsing, coordinate transformations, equirectangular projection, handling Earth's curvature.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Data Engineering</h3>
+                <p>Two-stage pipeline design, O(1) lookup tables, graceful handling of missing data.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3>Computer Graphics</h3>
+                <p>Isometric projection math, painter's algorithm, color theory for visual hierarchy.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/programmingkenta/project_001" target="_blank">GitHub Repository</a>
+            <a href="shibuya_osm.html">Live Demo</a>
+            <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap License</a>
+        </div>
+        <p>
+            Built with Python & HTML5 Canvas. Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors.<br>
+            Inspired by <a href="https://github.com/dataartist/isometric-nyc" target="_blank">Isometric NYC</a> by Robert Hodgin.
+        </p>
+    </footer>
+
+    <!-- Scroll Animation Script -->
+    <script>
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
